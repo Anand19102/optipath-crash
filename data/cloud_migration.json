@@ -1,0 +1,14 @@
+{
+  "project_name": "Core Banking Cloud Cutover",
+  "time_unit": "days",
+  "indirect_cost_per_unit_time": 50000,
+  "tasks": [
+    {"id": "T01", "description": "Schema Migration Prep", "predecessors": [], "normal_time": 5, "crash_time": 3, "crash_cost_per_unit": 15000},
+    {"id": "T02", "description": "Data Pipeline Sync", "predecessors": ["T01"], "normal_time": 8, "crash_time": 5, "crash_cost_per_unit": 25000},
+    {"id": "T03", "description": "Microservice Deployment", "predecessors": ["T01"], "normal_time": 6, "crash_time": 4, "crash_cost_per_unit": 18000},
+    {"id": "T04", "description": "API Gateway Configuration", "predecessors": ["T02", "T03"], "normal_time": 4, "crash_time": 2, "crash_cost_per_unit": 12000},
+    {"id": "T05", "description": "Security & IAM Audit", "predecessors": ["T02"], "normal_time": 7, "crash_time": 4, "crash_cost_per_unit": 20000},
+    {"id": "T06", "description": "End-to-End Penetration Test", "predecessors": ["T04", "T05"], "normal_time": 5, "crash_time": 3, "crash_cost_per_unit": 35000},
+    {"id": "T07", "description": "Production Traffic Cutover", "predecessors": ["T06"], "normal_time": 3, "crash_time": 2, "crash_cost_per_unit": 50000}
+  ]
+}

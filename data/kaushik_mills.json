@@ -1,0 +1,18 @@
+{
+  "project_name": "Kaushik Mills Feed Mill Construction",
+  "time_unit": "weeks",
+  "indirect_cost_per_unit_time": 70000,
+  "tasks": [
+    {"id": "A", "description": "Design plant", "predecessors": [], "normal_time": 12, "crash_time": 10, "crash_cost_per_unit": 24000},
+    {"id": "B", "description": "Select plant site", "predecessors": ["A"], "normal_time": 8, "crash_time": 8, "crash_cost_per_unit": 0},
+    {"id": "C", "description": "Select plant builder", "predecessors": ["A"], "normal_time": 6, "crash_time": 4, "crash_cost_per_unit": 3000},
+    {"id": "D", "description": "Select operating personnel", "predecessors": ["A"], "normal_time": 13, "crash_time": 13, "crash_cost_per_unit": 0},
+    {"id": "E", "description": "Prepare the building site", "predecessors": ["B", "C"], "normal_time": 4, "crash_time": 4, "crash_cost_per_unit": 0},
+    {"id": "F", "description": "Make or buy mill equipment", "predecessors": ["C"], "normal_time": 10, "crash_time": 8, "crash_cost_per_unit": 30000},
+    {"id": "G", "description": "Prepare mill operations manual", "predecessors": ["C"], "normal_time": 6, "crash_time": 4, "crash_cost_per_unit": 1500},
+    {"id": "H", "description": "Build the plant", "predecessors": ["E", "F"], "normal_time": 10, "crash_time": 6, "crash_cost_per_unit": 75000},
+    {"id": "I", "description": "Train plant operators", "predecessors": ["D", "G"], "normal_time": 8, "crash_time": 8, "crash_cost_per_unit": 0},
+    {"id": "J", "description": "Test the plant", "predecessors": ["H", "I"], "normal_time": 8, "crash_time": 8, "crash_cost_per_unit": 0},
+    {"id": "K", "description": "Obtain production license", "predecessors": ["J"], "normal_time": 4, "crash_time": 4, "crash_cost_per_unit": 0}
+  ]
+}
