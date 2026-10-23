@@ -448,7 +448,7 @@ with tabs[0]:
         plot_bgcolor="#090d16",
         paper_bgcolor="#090d16",
         height=460,
-        margin=dict(l=10, r=20, t=10, b=30),
+        margin=dict(l=10, r=20, t=30, b=30),
         yaxis=dict(autorange="reversed", tickfont=dict(size=11, family="Inter")),
         xaxis=dict(gridcolor="#1e293b", tickfont=dict(size=11, family="JetBrains Mono")),
         legend=dict(
@@ -457,10 +457,12 @@ with tabs[0]:
             y=1.02,
             xanchor="right",
             x=1,
-            font=dict(size=11)
+            bgcolor="rgba(0, 0, 0, 0)",
+            bordercolor="rgba(0, 0, 0, 0)",
+            font=dict(size=11, color="#cbd5e1", family="Inter")
         )
     )
-    st.plotly_chart(fig_gantt, use_container_width=True)
+    st.plotly_chart(fig_gantt, use_container_width=True, config={'displayModeBar': False})
 
 # ------------------------------------------------------------------------------
 # TAB 2: TOPOLOGICAL NETWORK DAG
@@ -654,10 +656,12 @@ with tabs[2]:
             y=1.02,
             xanchor="right",
             x=1,
-            font=dict(size=11)
+            bgcolor="rgba(0, 0, 0, 0)",
+            bordercolor="rgba(0, 0, 0, 0)",
+            font=dict(size=11, color="#cbd5e1", family="Inter")
         )
     )
-    st.plotly_chart(fig_frontier, use_container_width=True)
+    st.plotly_chart(fig_frontier, use_container_width=True, config={'displayModeBar': False})
 
     col_inf1, col_inf2 = st.columns([2.5, 1])
     with col_inf1:
