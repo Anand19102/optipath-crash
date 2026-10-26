@@ -54,17 +54,18 @@ st.markdown("""
         background-color: var(--bg-main);
     }
 
-    /* Fix Plotly Hover Tooltips from Appearing as Plain White Opaque Boxes */
-    .js-plotly-plot .plotly .hoverlayer text {
-        fill: #f8fafc !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    /* CRITICAL FIX: Force Plotly SVG Tooltip Box to Deep Dark Slate with White Text */
+    div.js-plotly-plot .plotly .hoverlayer g.hovertext path {
+        fill: #090d16 !important;
+        stroke: #38bdf8 !important;
+        stroke-width: 1.5px !important;
+        fill-opacity: 0.98 !important;
     }
 
-    .js-plotly-plot .plotly .hoverlayer path {
-        fill: #0f172a !important;
-        stroke: #38bdf8 !important;
-        stroke-width: 1.2px !important;
-        opacity: 0.96 !important;
+    div.js-plotly-plot .plotly .hoverlayer g.hovertext text {
+        fill: #f8fafc !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-weight: 500 !important;
     }
 
     /* Executive Hero Header */
@@ -466,14 +467,19 @@ with tabs[0]:
         custom_data=["TaskID", "Description", "Segment", "Start", "Duration", "Finish"]
     )
 
-    # Rich, high-contrast, fully readable hover tooltip
+    # Explicitly enforce dark tooltip card formatting on every trace
     fig_gantt.update_traces(
         hovertemplate=(
-            "<b>%{customdata[0]}</b>: %{customdata[1]}<br>"
-            "<b>Segment:</b> %{customdata[2]}<br>"
-            "<b>Interval:</b> %{customdata[3]:.1f} → %{customdata[5]:.1f} " + time_unit + "<br>"
-            "<b>Span:</b> %{customdata[4]:.1f} " + time_unit +
+            "<span style='font-size:12px; font-weight:700; color:#38bdf8;'>%{customdata[0]}: %{customdata[1]}</span><br>"
+            "<span style='color:#94a3b8;'>Segment:</span> <b style='color:#ffffff;'>%{customdata[2]}</b><br>"
+            "<span style='color:#94a3b8;'>Active Window:</span> <b style='color:#f8fafc;'>%{customdata[3]:.1f} → %{customdata[5]:.1f} " + time_unit + "</b><br>"
+            "<span style='color:#94a3b8;'>Duration:</span> <b style='color:#f8fafc;'>%{customdata[4]:.1f} " + time_unit + "</b>"
             "<extra></extra>"
+        ),
+        hoverlabel=dict(
+            bgcolor="#090d16",
+            bordercolor="#38bdf8",
+            font=dict(color="#f8fafc", size=12, family="Plus Jakarta Sans")
         )
     )
 
@@ -486,11 +492,9 @@ with tabs[0]:
         yaxis=dict(autorange="reversed", tickfont=dict(size=11, family="Inter", color="#f8fafc")),
         xaxis=dict(gridcolor="#1e293b", tickfont=dict(size=11, family="JetBrains Mono", color="#f8fafc")),
         hoverlabel=dict(
-            bgcolor="#0f172a",
-            font_color="#f8fafc",
-            font_size=12,
-            font_family="Plus Jakarta Sans",
-            bordercolor="#38bdf8"
+            bgcolor="#090d16",
+            bordercolor="#38bdf8",
+            font=dict(color="#f8fafc", size=12, family="Plus Jakarta Sans")
         ),
         legend=dict(
             orientation="h",
@@ -543,7 +547,7 @@ with tabs[1]:
         color = "#ef4444" if is_crit_edge else "#64748b"
         width = 3.0 if is_crit_edge else 1.5
 
-        # 1. Edge Line Trace
+        # Edge line trace
         fig_dag.add_trace(go.Scatter(
             x=[x0, x1, None],
             y=[y0, y1, None],
@@ -553,14 +557,12 @@ with tabs[1]:
             showlegend=False
         ))
 
-        # 2. Prominent Directional Arrowhead
+        # Vector Arrowheads
         dx = x1 - x0
         dy = y1 - y0
         dist = np.hypot(dx, dy)
         if dist > 0:
             ux, uy = dx / dist, dy / dist
-            
-            # Position tip right at node boundary (node marker radius offset)
             arrow_tip_x = x1 - ux * 0.45
             arrow_tip_y = y1 - uy * 0.45
             arrow_tail_x = arrow_tip_x - ux * 0.35
@@ -599,11 +601,11 @@ with tabs[1]:
         desc = schedule.tasks[[t.id for t in schedule.tasks].index(node)].description
 
         node_hover.append(
-            f"<b>Activity {node}</b>: {desc}<br>"
-            f"<b>Effective Duration:</b> {eff_dur:.1f} {time_unit}<br>"
-            f"<b>Compressed:</b> {c_amt:.1f} {time_unit}<br>"
-            f"<b>Total Float:</b> {tf:.1f} {time_unit}<br>"
-            f"<b>Status:</b> {'CRITICAL (Zero Slack)' if is_crit else 'Non-Critical'}"
+            f"<span style='font-size:13px; font-weight:700; color:#38bdf8;'>Activity {node}: {desc}</span><br>"
+            f"<span style='color:#94a3b8;'>Effective Duration:</span> <b style='color:#f8fafc;'>{eff_dur:.1f} {time_unit}</b><br>"
+            f"<span style='color:#94a3b8;'>Compressed:</span> <b style='color:#fbbf24;'>{c_amt:.1f} {time_unit}</b><br>"
+            f"<span style='color:#94a3b8;'>Total Float:</span> <b style='color:#f8fafc;'>{tf:.1f} {time_unit}</b><br>"
+            f"<span style='color:#94a3b8;'>Status:</span> <b style='color:{'#ef4444' if is_crit else '#38bdf8'};'>{'CRITICAL (Zero Slack)' if is_crit else 'Non-Critical'}</b>"
         )
 
     fig_dag.add_trace(go.Scatter(
@@ -615,6 +617,11 @@ with tabs[1]:
         textfont=dict(family="JetBrains Mono", size=13, color="#ffffff"),
         hovertext=node_hover,
         hoverinfo="text",
+        hoverlabel=dict(
+            bgcolor="#090d16",
+            bordercolor="#38bdf8",
+            font=dict(color="#f8fafc", size=12, family="Plus Jakarta Sans")
+        ),
         marker=dict(
             size=38,
             color=node_color,
@@ -632,14 +639,13 @@ with tabs[1]:
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         hoverlabel=dict(
-            bgcolor="#0f172a",
-            font_color="#f8fafc",
-            font_size=12,
-            font_family="Plus Jakarta Sans",
-            bordercolor="#38bdf8"
+            bgcolor="#090d16",
+            bordercolor="#38bdf8",
+            font=dict(color="#f8fafc", size=12, family="Plus Jakarta Sans")
         )
     )
     st.plotly_chart(fig_dag, use_container_width=True)
+
 # ------------------------------------------------------------------------------
 # TAB 3: COST FRONTIER & PARETO
 # ------------------------------------------------------------------------------
@@ -662,7 +668,7 @@ with tabs[2]:
         name="Direct Expediting Cost",
         line=dict(color="#f97316", width=2.5),
         marker=dict(size=5),
-        hovertemplate="<b>Direct Cost:</b> Rs %{y:,.0f}<extra></extra>"
+        hovertemplate="<b style='color:#f97316;'>Direct Cost:</b> Rs %{y:,.0f}<extra></extra>"
     ))
 
     # Indirect Delay Penalty Curve
@@ -673,7 +679,7 @@ with tabs[2]:
         name="Indirect / Delay Liability",
         line=dict(color="#06b6d4", width=2, dash="dash"),
         marker=dict(size=5),
-        hovertemplate="<b>Indirect Cost:</b> Rs %{y:,.0f}<extra></extra>"
+        hovertemplate="<b style='color:#06b6d4;'>Indirect Overhead:</b> Rs %{y:,.0f}<extra></extra>"
     ))
 
     # Aggregate Cost Curve
@@ -684,7 +690,7 @@ with tabs[2]:
         name="Total Combined Project Cost",
         line=dict(color="#10b981", width=3.5),
         marker=dict(size=8, symbol="diamond"),
-        hovertemplate="<b>Total Cost:</b> Rs %{y:,.0f}<extra></extra>"
+        hovertemplate="<b style='color:#10b981;'>Total Cost:</b> Rs %{y:,.0f}<extra></extra>"
     ))
 
     # Optimal Inflection Marker
@@ -717,11 +723,9 @@ with tabs[2]:
         ),
         hovermode="x unified",
         hoverlabel=dict(
-            bgcolor="#0f172a",
-            font_color="#f8fafc",
-            font_size=12,
-            font_family="Plus Jakarta Sans",
-            bordercolor="#38bdf8"
+            bgcolor="#090d16",
+            bordercolor="#38bdf8",
+            font=dict(color="#f8fafc", size=12, family="Plus Jakarta Sans")
         ),
         legend=dict(
             orientation="h",
