@@ -54,6 +54,19 @@ st.markdown("""
         background-color: var(--bg-main);
     }
 
+    /* Fix Plotly Hover Tooltips from Appearing as Plain White Opaque Boxes */
+    .js-plotly-plot .plotly .hoverlayer text {
+        fill: #f8fafc !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+
+    .js-plotly-plot .plotly .hoverlayer path {
+        fill: #0f172a !important;
+        stroke: #38bdf8 !important;
+        stroke-width: 1.2px !important;
+        opacity: 0.96 !important;
+    }
+
     /* Executive Hero Header */
     .dashboard-header {
         background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
@@ -405,24 +418,33 @@ with tabs[0]:
         # 1. Main active duration bar
         gantt_rows.append({
             "Task": f"<b>{t.id}</b>: {t.description}",
+            "TaskID": t.id,
+            "Description": t.description,
             "Start": es,
             "Duration": dur,
+            "Finish": round(es + dur, 2),
             "Segment": "Critical Execution" if is_crit else "Standard Execution"
         })
         # 2. Crashed portion (time compressed)
         if crashed > 0:
             gantt_rows.append({
                 "Task": f"<b>{t.id}</b>: {t.description}",
+                "TaskID": t.id,
+                "Description": t.description,
                 "Start": es + dur,
                 "Duration": crashed,
+                "Finish": round(es + dur + crashed, 2),
                 "Segment": "Expedited Compression"
             })
         # 3. Available Total Float buffer (slack)
         if tf > 0:
             gantt_rows.append({
                 "Task": f"<b>{t.id}</b>: {t.description}",
+                "TaskID": t.id,
+                "Description": t.description,
                 "Start": es + dur + crashed,
                 "Duration": tf,
+                "Finish": round(es + dur + crashed + tf, 2),
                 "Segment": "Available Float Buffer"
             })
 
@@ -441,6 +463,18 @@ with tabs[0]:
             "Available Float Buffer": "#334155"
         },
         labels={"x": f"Project Timeline ({time_unit})", "Task": ""},
+        custom_data=["TaskID", "Description", "Segment", "Start", "Duration", "Finish"]
+    )
+
+    # Rich, high-contrast, fully readable hover tooltip
+    fig_gantt.update_traces(
+        hovertemplate=(
+            "<b>%{customdata[0]}</b>: %{customdata[1]}<br>"
+            "<b>Segment:</b> %{customdata[2]}<br>"
+            "<b>Interval:</b> %{customdata[3]:.1f} → %{customdata[5]:.1f} " + time_unit + "<br>"
+            "<b>Span:</b> %{customdata[4]:.1f} " + time_unit +
+            "<extra></extra>"
+        )
     )
 
     fig_gantt.update_layout(
@@ -449,8 +483,15 @@ with tabs[0]:
         paper_bgcolor="#090d16",
         height=460,
         margin=dict(l=10, r=20, t=30, b=30),
-        yaxis=dict(autorange="reversed", tickfont=dict(size=11, family="Inter")),
-        xaxis=dict(gridcolor="#1e293b", tickfont=dict(size=11, family="JetBrains Mono")),
+        yaxis=dict(autorange="reversed", tickfont=dict(size=11, family="Inter", color="#f8fafc")),
+        xaxis=dict(gridcolor="#1e293b", tickfont=dict(size=11, family="JetBrains Mono", color="#f8fafc")),
+        hoverlabel=dict(
+            bgcolor="#0f172a",
+            font_color="#f8fafc",
+            font_size=12,
+            font_family="Plus Jakarta Sans",
+            bordercolor="#38bdf8"
+        ),
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -499,9 +540,10 @@ with tabs[1]:
         x0, y0 = node_pos[u]
         x1, y1 = node_pos[v]
         is_crit_edge = (u in crit_set and v in crit_set)
-        color = "#ef4444" if is_crit_edge else "#334155"
-        width = 2.8 if is_crit_edge else 1.2
+        color = "#ef4444" if is_crit_edge else "#64748b"
+        width = 3.0 if is_crit_edge else 1.5
 
+        # 1. Edge Line Trace
         fig_dag.add_trace(go.Scatter(
             x=[x0, x1, None],
             y=[y0, y1, None],
@@ -511,19 +553,34 @@ with tabs[1]:
             showlegend=False
         ))
 
-        # Vector Arrowheads
-        vx = x1 - x0
-        vy = y1 - y0
-        v_len = np.hypot(vx, vy)
-        if v_len > 0:
-            ux, uy = vx / v_len, vy / v_len
-            ax = x1 - ux * 0.45
-            ay = y1 - uy * 0.45
+        # 2. Prominent Directional Arrowhead
+        dx = x1 - x0
+        dy = y1 - y0
+        dist = np.hypot(dx, dy)
+        if dist > 0:
+            ux, uy = dx / dist, dy / dist
+            
+            # Position tip right at node boundary (node marker radius offset)
+            arrow_tip_x = x1 - ux * 0.45
+            arrow_tip_y = y1 - uy * 0.45
+            arrow_tail_x = arrow_tip_x - ux * 0.35
+            arrow_tail_y = arrow_tip_y - uy * 0.35
+
             fig_dag.add_annotation(
-                x=ax, y=ay, ax=ax - ux * 0.2, ay=ay - uy * 0.2,
-                xref="x", yref="y", axref="x", ayref="y",
-                showarrow=True, arrowhead=2, arrowsize=1.2, arrowwidth=width,
-                arrowcolor=color
+                x=arrow_tip_x,
+                y=arrow_tip_y,
+                ax=arrow_tail_x,
+                ay=arrow_tail_y,
+                xref="x",
+                yref="y",
+                axref="x",
+                ayref="y",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1.6,
+                arrowwidth=width + 0.5,
+                arrowcolor=color,
+                opacity=0.95
             )
 
     # Render Node Traces
@@ -543,10 +600,10 @@ with tabs[1]:
 
         node_hover.append(
             f"<b>Activity {node}</b>: {desc}<br>"
-            f"Effective Duration: {eff_dur:.1f} {time_unit}<br>"
-            f"Compressed: {c_amt:.1f} {time_unit}<br>"
-            f"Total Float: {tf:.1f} {time_unit}<br>"
-            f"Status: {'CRITICAL (Zero Slack)' if is_crit else 'Non-Critical'}"
+            f"<b>Effective Duration:</b> {eff_dur:.1f} {time_unit}<br>"
+            f"<b>Compressed:</b> {c_amt:.1f} {time_unit}<br>"
+            f"<b>Total Float:</b> {tf:.1f} {time_unit}<br>"
+            f"<b>Status:</b> {'CRITICAL (Zero Slack)' if is_crit else 'Non-Critical'}"
         )
 
     fig_dag.add_trace(go.Scatter(
@@ -555,13 +612,13 @@ with tabs[1]:
         mode="markers+text",
         text=node_text,
         textposition="middle center",
-        textfont=dict(family="JetBrains Mono", size=12, color="#ffffff"),
+        textfont=dict(family="JetBrains Mono", size=13, color="#ffffff"),
         hovertext=node_hover,
         hoverinfo="text",
         marker=dict(
-            size=36,
+            size=38,
             color=node_color,
-            line=dict(width=2, color="#ffffff")
+            line=dict(width=2.5, color="#ffffff")
         ),
         showlegend=False
     ))
@@ -570,13 +627,19 @@ with tabs[1]:
         template="plotly_dark",
         plot_bgcolor="#090d16",
         paper_bgcolor="#090d16",
-        height=480,
-        margin=dict(l=10, r=10, t=20, b=20),
+        height=490,
+        margin=dict(l=20, r=20, t=20, b=20),
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        hoverlabel=dict(
+            bgcolor="#0f172a",
+            font_color="#f8fafc",
+            font_size=12,
+            font_family="Plus Jakarta Sans",
+            bordercolor="#38bdf8"
+        )
     )
     st.plotly_chart(fig_dag, use_container_width=True)
-
 # ------------------------------------------------------------------------------
 # TAB 3: COST FRONTIER & PARETO
 # ------------------------------------------------------------------------------
@@ -598,7 +661,8 @@ with tabs[2]:
         mode="lines+markers",
         name="Direct Expediting Cost",
         line=dict(color="#f97316", width=2.5),
-        marker=dict(size=5)
+        marker=dict(size=5),
+        hovertemplate="<b>Direct Cost:</b> Rs %{y:,.0f}<extra></extra>"
     ))
 
     # Indirect Delay Penalty Curve
@@ -608,7 +672,8 @@ with tabs[2]:
         mode="lines+markers",
         name="Indirect / Delay Liability",
         line=dict(color="#06b6d4", width=2, dash="dash"),
-        marker=dict(size=5)
+        marker=dict(size=5),
+        hovertemplate="<b>Indirect Cost:</b> Rs %{y:,.0f}<extra></extra>"
     ))
 
     # Aggregate Cost Curve
@@ -618,7 +683,8 @@ with tabs[2]:
         mode="lines+markers",
         name="Total Combined Project Cost",
         line=dict(color="#10b981", width=3.5),
-        marker=dict(size=8, symbol="diamond")
+        marker=dict(size=8, symbol="diamond"),
+        hovertemplate="<b>Total Cost:</b> Rs %{y:,.0f}<extra></extra>"
     ))
 
     # Optimal Inflection Marker
@@ -642,14 +708,21 @@ with tabs[2]:
         xaxis=dict(
             title=f"Overall Project Duration ({time_unit})",
             gridcolor="#1e293b",
-            tickfont=dict(family="JetBrains Mono", size=11)
+            tickfont=dict(family="JetBrains Mono", size=11, color="#f8fafc")
         ),
         yaxis=dict(
             title="Total Expenditure (Rs)",
             gridcolor="#1e293b",
-            tickfont=dict(family="JetBrains Mono", size=11)
+            tickfont=dict(family="JetBrains Mono", size=11, color="#f8fafc")
         ),
         hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor="#0f172a",
+            font_color="#f8fafc",
+            font_size=12,
+            font_family="Plus Jakarta Sans",
+            bordercolor="#38bdf8"
+        ),
         legend=dict(
             orientation="h",
             yanchor="bottom",
